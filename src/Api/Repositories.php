@@ -187,6 +187,37 @@ class Repositories extends AbstractApi
         return $this->get($this->getProjectPath($project_id, 'releases'));
     }
 
+    public function project( $project_id ) {
+        return $this->get( 'projects/' . $project_id );
+    }
+
+    public function events($project_id, array $parameters = [])
+    {
+        $resolver = $this->createOptionsResolver();
+        $datetimeNormalizer = function (Options $resolver, \DateTimeInterface $value): string {
+            return $value->format('Y-m-d');
+        };
+
+        $resolver->setDefined('action')
+            ->setAllowedValues('action', ['created', 'updated', 'closed', 'reopened', 'pushed', 'commented', 'merged', 'joined', 'left', 'destroyed', 'expired'])
+        ;
+        $resolver->setDefined('target_type')
+            ->setAllowedValues('target_type', ['issue', 'milestone', 'merge_request', 'note', 'project', 'snippet', 'user'])
+        ;
+        $resolver->setDefined('before')
+            ->setAllowedTypes('before', \DateTimeInterface::class)
+            ->setNormalizer('before', $datetimeNormalizer);
+        $resolver->setDefined('after')
+            ->setAllowedTypes('after', \DateTimeInterface::class)
+            ->setNormalizer('after', $datetimeNormalizer)
+        ;
+        $resolver->setDefined('sort')
+            ->setAllowedValues('sort', ['asc', 'desc'])
+        ;
+
+        return $this->get($this->getProjectPath($project_id, '/events'), $resolver->resolve($parameters));
+    }
+
     /**
      * @see https://docs.gitlab.com/ee/api/commits.html#list-repository-commits
      *
